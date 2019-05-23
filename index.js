@@ -2,6 +2,12 @@ var request = require('request');
 const express = require('express')
 const app = express();
 var mysql      = require('mysql');
+var jwt = require('jsonwebtoken');
+var auth = require('./lib/auth.js');
+var cors = require('cors');
+
+
+var tokenKey = 'f!i@n#t$e%c^h&t*o(k)))e@@nKey'
 var connection = mysql.createConnection({
   host     : '127.0.0.1',
   port : 3307,
@@ -15,6 +21,7 @@ app.use(express.static(__dirname + '/public'));
 
 app.use(express.json());
 app.use(express.urlencoded({extended:false}));
+app.use(cors());
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -27,6 +34,10 @@ app.get('/', function (req, res) {
 
 app.get('/join', function (req, res) {
   res.render('join')
+})
+
+app.get('/login', function (req, res) {
+  res.render('login');
 })
 
 app.post('/join', function(req, res){
@@ -84,10 +95,46 @@ app.get('/authResult',function(req, res){
 })
   })
 
+  app.post('/login', function(req, res){
+    var userEmail = req.body.email;
+    var userPassword = req.body.password;
+    console.log(userEmail, userPassword);
+
+    var sql = "SELECT * FROM user WHERE user_id = ?";
+    connection.query(sql, [userEmail], function (error, results) {
+      if (error) throw error;
+      else {
+        console.log(results);
+        if (userPassword == results[0].user_password){
+          jwt.sign(
+            {userName : results[0].name,
+             userId : results[0].user_id
+            },
+            tokenKey,
+            {
+              expiresIn : '1d',
+              issuer : 'fintech.admin',
+              subject : 'user.login.info'
+            },
+            function(err, token){
+              console.log("LOGIN 성공", new Date(), token)
+              res.json(token)
+            }
+          )
+        }
+        else {
+          res.json("등록정보가 없습니다");
+        }
+      }
+    });
+
+  })
   app.get('/ajaxTest',function(req, res){
     console.log('ajax call');
     var result = "hello";
     res.json(result);
 })
-
+  app.get('/tokenTest', auth, function(req, res) {
+    console.log(req.decoded.userName);
+  })
 app.listen(3000)
