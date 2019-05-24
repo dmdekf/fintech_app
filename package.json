@@ -4,6 +4,7 @@
   "description": "app",
   "main": "index.js",
   "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
     "cors": "^2.8.5",
     "ejs": "^2.6.1",
     "express": "^4.17.0",

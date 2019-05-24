@@ -214,6 +214,107 @@ app.get('/balance', function(req, res){
   res.render('balance');
 })
 
+app.get('/qr', function(req, res){
+  res.render('qr');
+})
+
+app.get('/withdraw', function(req, res){
+  res.render('withdraw');
+})
+
+app.post('/withdrawqr', auth, function(req,res){
+  var userId = req.decoded.userId;
+  var qrfin = req.body.qrFin;
+  var sql = "SELECT userseqnum, accessToken FROM user WHERE user_id = ?";
+  connection.query(sql,[userId], function(err, result){
+      if(err){
+          console.error(err);
+          throw err;
+      }
+      else {
+          console.log(result[0].accessToken);
+          var option = {
+              method : "POST",
+              url :'https://testapi.open-platform.or.kr/transfer/withdraw',
+              headers : {
+                  'Authorization' : 'Bearer ' + result[0].accessToken,
+                  'Content-Type' : 'application/json; charset=UTF-8'
+              },
+              json : {
+                dps_print_content : '나윤지',
+                fintech_use_num : qrfin,
+                tran_amt : 1000,
+                print_content : '나윤지',
+                tran_dtime : '20190523101921'
+            }
+          };
+          request(option, function(err, response, body){
+            if(err) throw err;
+            else {
+                if(body.rsp_code == "A0000"){
+                    res.json(1);
+                }
+                else {
+                    res.json(2);
+                }
+            }
+        })
+    }
+})
+})
+
+app.post('/withdraw', auth, function(req,res){
+  var userId = req.decoded.userId;
+  var finNum = '199004740057725675133435';
+  var sql = "SELECT userseqnum, accessToken FROM user WHERE user_id = ?";
+  connection.query(sql,[userId], function(err, result){
+      if(err){
+          console.error(err);
+          throw err;
+      }
+      else {
+          console.log(result[0].accessToken);
+          var option = {
+              method : "POST",
+              url :'https://testapi.open-platform.or.kr/transfer/withdraw',
+              headers : {
+                  'Authorization' : 'Bearer ' + result[0].accessToken,
+                  'Content-Type' : 'application/json; charset=UTF-8'
+              },
+              json : {
+                dps_print_content : '나윤지',
+                fintech_use_num : finNum,
+                tran_amt : 1000,
+                print_content : '나윤지',
+                tran_dtime : '20190523101921'
+            }
+          };
+          request(option, function(err, response, body){
+            if(err) throw err;
+            else {
+                console.log(body);
+                console.log(userId);
+                var requestResult = body
+                console.log(requestResult.tran_amt);
+                if(requestResult.rsp_code == "A0000"){
+                    var sql = "UPDATE user set point = point + ? WHERE user_id = ?"
+                    connection.query(sql, [Number(requestResult.tran_amt), userId], function(err, result){
+                        if(err){
+                            console.error(err);
+                            throw err;
+                            
+                        }
+                        else {
+                            res.json(1);
+                        }
+                    })
+                }
+            }
+        })
+    }
+})
+})
+
 app.post('/balance', auth, function(req,res){
   var userId = req.decoded.userId;
   var finNum = req.body.finNum;
@@ -241,6 +342,147 @@ app.post('/balance', auth, function(req,res){
           })
       }
   })
+})
+
+app.get('/authResult2',function(req, res){
+  var auth_code = req.query.code
+  var getTokenUrl = "https://testapi.open-platform.or.kr/oauth/2.0/token";
+  var option = {
+      method : "POST",
+      url :getTokenUrl,
+      headers : {
+        
+      },
+      form : {
+          code : auth_code,
+          client_id : "l7xx6fc7801e1d23465f827b966915b4d293",
+          client_secret : "383a28572a454f2e81585487de76913e",
+          scope: "oob",
+          grant_type : " client_credentials"
+      }
+  };
+  request(option, function(err, response, body){
+    if(err) throw err;
+    else {
+        console.log(body);
+        var accessRequestResult = JSON.parse(body);
+        console.log(accessRequestResult);
+        res.render('resultChild', {data : accessRequestResult})
+    }
+})
+  })
+  
+app.post('/deposit', auth, function(req,res){
+  var userId = req.decoded.userId;
+  var finNum = '199004740057725675133435';
+  var sql = "SELECT userseqnum, accessToken FROM user WHERE user_id = ?";
+  connection.query(sql,[userId], function(err, result){
+      if(err){
+          console.error(err);
+          throw err;
+      }
+      else {
+          console.log(result[0].accessToken);
+          var option = {
+              method : "POST",
+              url :' https://testapi.open-platform.or.kr/v1.0/transfer/deposit',
+              headers : {
+                  'Authorization' : 'Bearer ' + result[0].accessToken,
+                  'Content-Type' : 'application/json; charset=UTF-8',
+                  //  scope : 'oob'
+              },
+              json : {
+                wd_pass_phrase : 'NONE',
+                wd_print_content: '나윤지',
+                name_check_option : 'on',
+                req_cnt : '25',
+                req_list : [{
+                  tran_no : '1',
+                  fintech_use_num : finNum,
+                  print_content : '나윤지',
+                  tran_amt : 1000
+                }]
+                ,
+                tran_dtime : '20190523101921'
+            }
+          };
+          request(option, function(err, response, body){
+            if(err) throw err;
+            else {
+                console.log(body);
+                console.log(userId);
+                var requestResult = body
+                console.log(requestResult.tran_amt);
+                if(requestResult.rsp_code == "A0000"){
+                    var sql = "UPDATE user set point = point - ? WHERE user_id = ?"
+                    connection.query(sql, [Number(requestResult.tran_amt), userId], function(err, result){
+                        if(err){
+                            console.error(err);
+                            throw err;
+                            
+                        }
+                        else {
+                            res.json(1);
+                        }
+                    })
+                }
+            }
+        })
+    }
+})
+})
+
+app.post('/real_name', auth, function(req,res){
+  var userId = req.decoded.userId;
+  var finNum = '199004740057725675133435';
+  var sql = "SELECT userseqnum, accessToken FROM user WHERE user_id = ?";
+  connection.query(sql,[userId], function(err, result){
+      if(err){
+          console.error(err);
+          throw err;
+      }
+      else {
+          console.log(result[0].accessToken);
+          var option = {
+              method : "POST",
+              url :' https://testapi.open-platform.or.kr/v1.0/inquiry/real_name',
+              headers : {
+                  'Authorization' : 'Bearer ' + result[0].accessToken,
+                  'Content-Type' : 'application/json; charset=UTF-8',
+                  'scope' : 'oob'
+              },
+              json : {
+                bank_code_std : '090',
+                account_num : '123456123456',
+                account_holder_info_type : ' ',
+                account_holder_info : '900929',
+                tran_dtime : '20190523101921'
+            }
+          };
+          request(option, function(err, response, body){
+            if(err) throw err;
+            else {
+                console.log(body);
+                // console.log(userId);
+                // var requestResult = body
+                // console.log(requestResult.tran_amt);
+                // if(requestResult.rsp_code == "A0000"){
+                //     var sql = "UPDATE user set point = point + ? WHERE user_id = ?"
+                //     connection.query(sql, [Number(requestResult.tran_amt), userId], function(err, result){
+                //         if(err){
+                //             console.error(err);
+                //             throw err;
+                            
+                //         }
+                //         else {
+                //             res.json(1);
+                //         }
+                //     })
+                // }
+            }
+        })
+    }
+})
 })
 
 app.listen(3000)
