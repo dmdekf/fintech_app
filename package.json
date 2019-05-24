@@ -24,5 +24,8 @@
   "bugs": {
     "url": "https://github.com/dmdekf/fintech_app/issues"
   },
-  "homepage": "https://github.com/dmdekf/fintech_app#readme"
+  "homepage": "https://github.com/dmdekf/fintech_app#readme",
+  "directories": {
+    "lib": "lib"
+  }
 }

@@ -173,6 +173,43 @@ app.get('/tokenTest', auth, function(req, res) {
   var auth_fintechnum = req.query.fintech_num
 })
 
+
+app.post('/transaction_list', auth, function(req,res){
+  var userId = req.decoded.userId;
+  var finNum = req.body.finNum;
+  var sql = "SELECT userseqnum, accessToken FROM user WHERE user_id = ?";
+  connection.query(sql,[userId], function(err, result){
+      if(err){
+          console.error(err);
+          throw err;
+      }
+      else {
+          console.log(result[0].accessToken);
+          var option = {
+              method : "GET",
+              url :'https://testapi.open-platform.or.kr/v1.0/account/transaction_list?'+
+              'fintech_use_num='+finNum+'&'+
+              'inquiry_type=A&'+
+              'from_date=20160101&'+
+              'to_date=20160101&'+
+              'sort_order=D&'+
+              'page_index=1&'+
+              'tran_dtime=20160101121212&',
+              headers : {
+                  'Authorization' : 'Bearer ' + result[0].accessToken
+              }
+          };
+          request(option, function(err, response, body){
+              if(err) throw err;
+              else {
+                  console.log(body);
+                  res.json(JSON.parse(body));
+              }
+          })
+      }
+  })
+})
+
 app.get('/balance', function(req, res){
   res.render('balance');
 })
