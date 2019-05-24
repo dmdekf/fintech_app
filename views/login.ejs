@@ -42,30 +42,11 @@
                 },
                 success:function(data){
                     alert(data);
+                    sessionStorage.setItem('jwtToken',data);
                 }
             })
         });
 </script>
-<!-- Page Content Class Ends Here-->
-
 <% include ./hf/footer.ejs %>
 
 
-<!-- 
-
-<script>
-    $("#loginBtn").click(function(){
-            $.ajax({
-                url:'http://localhost:3000/login',
-                type : 'POST',
-                data : {
-                    email : $("#emailInput").val(),
-                    password : $("#passwordInput").val(),
-                },
-                success:function(data){
-                    alert(data);
-                }
-            })
-        });
-</script>
-</body> --> -->

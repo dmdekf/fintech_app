@@ -1,0 +1,44 @@
+<% include ./hf/header.ejs %>
+<div class="page-content">
+    <div data-height="cover-header" class="caption bottom-0">
+        <div class="caption-center">
+            <div class="content-boxed left-40 right-40">
+                <div class="content top-20 bottom-40">
+
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function getQueryStringObject() {
+    var a = window.location.search.substr(1).split('&');
+    if (a == "") return {};
+    var b = {};
+    for (var i = 0; i < a.length; ++i) {
+        var p = a[i].split('=', 2);
+        if (p.length == 1)
+            b[p[0]] = "";
+        else
+            b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+    }
+    return b;
+}
+        var qs = getQueryStringObject();
+        var jwtToken = sessionStorage.getItem('jwtToken');
+        $.ajax({
+            url:'http://localhost:3000/balance',
+            type : 'POST',            
+            headers : {
+                'x-access-token' : jwtToken
+            },
+            data : {
+                finNum : qs.fin_use_num
+            },
+            success:function(data){
+                alert(data);
+            }
+        })
+</script>
+<% include ./hf/footer.ejs %>
+
+

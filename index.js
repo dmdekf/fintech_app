@@ -3,7 +3,7 @@ const express = require('express')
 const app = express();
 var mysql      = require('mysql');
 var jwt = require('jsonwebtoken');
-var auth = require('./lib/auth.js');
+var auth = require('./lib/auth');
 var cors = require('cors');
 
 
@@ -49,10 +49,10 @@ app.post('/join', function(req, res){
   var phone = "010999999999";
   var accessToken = req.body.accessToken;
   var refreshToken = req.body.refreshToken;
-  var useseqnum = req.body.useseqnum;
+  var userseqnum = req.body.userseqnum;
   console.log(name, email, password);
-  var sql = 'INSERT INTO `fintech`.`user` (`name`, `birthday`, `user_id`, `user_password`, `phone`, `accesstoken`, `refreshtoken`, `useseqnum`) VALUES (?,?,?,?,?,?,?,?);'
-  connection.query(sql,[name, birthday, email, password, phone,accessToken,refreshToken,useseqnum], function (error, results) {
+  var sql = 'INSERT INTO `fintech`.`user` (`name`, `birthday`, `user_id`, `user_password`, `phone`, `accesstoken`, `refreshtoken`, `userseqnum`) VALUES (?,?,?,?,?,?,?,?);'
+  connection.query(sql,[name, birthday, email, password, phone,accessToken,refreshToken,userseqnum], function (error, results) {
     if (error) throw error;  
     else {
         console.log(this.sql);
@@ -95,46 +95,115 @@ app.get('/authResult',function(req, res){
 })
   })
 
-  app.post('/login', function(req, res){
+  app.post('/login', function (req, res) {
     var userEmail = req.body.email;
     var userPassword = req.body.password;
     console.log(userEmail, userPassword);
 
     var sql = "SELECT * FROM user WHERE user_id = ?";
     connection.query(sql, [userEmail], function (error, results) {
-      if (error) throw error;
+      if (error) throw error;  
       else {
-        console.log(results);
-        if (userPassword == results[0].user_password){
-          jwt.sign(
-            {userName : results[0].name,
-             userId : results[0].user_id
-            },
-            tokenKey,
-            {
-              expiresIn : '1d',
-              issuer : 'fintech.admin',
-              subject : 'user.login.info'
-            },
-            function(err, token){
-              console.log("LOGIN 성공", new Date(), token)
-              res.json(token)
-            }
-          )
+
+        console.log(userPassword, results[0].user_password);
+        if(userPassword == results[0].user_password){
+            jwt.sign(
+                {
+                    userName : results[0].name,
+                    userId : results[0].user_id
+                },
+                tokenKey,
+                {
+                    expiresIn : '1d',
+                    issuer : 'fintech.admin',
+                    subject : 'user.login.info'
+                },
+                function(err, token){
+                    console.log('로그인 성공', token)
+                    res.json(token)
+                }
+            )            
         }
         else {
-          res.json("등록정보가 없습니다");
+            res.json('등록정보가 없습니다');
         }
       }
     });
-
-  })
-  app.get('/ajaxTest',function(req, res){
-    console.log('ajax call');
-    var result = "hello";
-    res.json(result);
 })
-  app.get('/tokenTest', auth, function(req, res) {
-    console.log(req.decoded.userName);
+
+app.get('/ajaxTest',function(req, res){
+  console.log('ajax call');
+  var result = "hello";
+  res.json(result);
+})
+
+app.get('/main', function(req, res){
+  res.render('main')
+})
+
+app.post('/getUser', auth, function(req, res){
+  var userId = req.decoded.userId;
+  var sql = "SELECT userseqnum, accessToken FROM user WHERE user_id = ?";
+  connection.query(sql,[userId], function(err, result){
+      if(err){
+          console.error(err);
+          throw err;
+      }
+      else {
+          var option = {
+              method : "GET",
+              url :'https://testapi.open-platform.or.kr/user/me?user_seq_no='+ result[0].userseqnum,
+              headers : {
+                  'Authorization' : 'Bearer ' + result[0].accessToken
+              }
+          };
+          request(option, function(err, response, body){
+              if(err) throw err;
+              else {
+                  console.log(body);
+                  res.json(JSON.parse(body));
+              }
+          })
+      }
   })
+})
+
+app.get('/tokenTest', auth, function(req, res) {
+  console.log(req.decoded);
+  var auth_fintechnum = req.query.fintech_num
+})
+
+app.get('/balance', function(req, res){
+  res.render('balance');
+})
+
+app.post('/balance', auth, function(req,res){
+  var userId = req.decoded.userId;
+  var finNum = req.body.finNum;
+  var sql = "SELECT userseqnum, accessToken FROM user WHERE user_id = ?";
+  connection.query(sql,[userId], function(err, result){
+      if(err){
+          console.error(err);
+          throw err;
+      }
+      else {
+          console.log(result[0].accessToken);
+          var option = {
+              method : "GET",
+              url :'https://testapi.open-platform.or.kr/v1.0/account/balance?fintech_use_num='+finNum+'&tran_dtime=20190523101921',
+              headers : {
+                  'Authorization' : 'Bearer ' + result[0].accessToken
+              }
+          };
+          request(option, function(err, response, body){
+              if(err) throw err;
+              else {
+                  console.log(body);
+                  res.json(JSON.parse(body));
+              }
+          })
+      }
+  })
+})
+
 app.listen(3000)
